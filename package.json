@@ -1,0 +1,29 @@
+{
+  "name": "chrome-recorder",
+  "version": "0.1.0",
+  "description": "Lets you easily record audio and video in Chrome",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christianalfoni/chrome-recorder.git"
+  },
+  "keywords": [
+    "chrome",
+    "record",
+    "video",
+    "audio"
+  ],
+  "author": "Christian Alfoni",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/christianalfoni/chrome-recorder/issues"
+  },
+  "homepage": "https://github.com/christianalfoni/chrome-recorder#readme",
+  "devDependencies": {
+    "webpack": "^1.12.2",
+    "webpack-dev-server": "^1.12.0"
+  }
+}
