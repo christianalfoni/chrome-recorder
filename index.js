@@ -95,7 +95,7 @@ module.exports = function ChromeMediaRecorder (video) {
           cb && cb();
 
         });
-        video.removeEventListener('canplay', seek);
+        video.removeEventListener('canplay', canplay);
       };
 
       video.addEventListener('canplay', canplay);
