@@ -12,22 +12,33 @@ module.exports = function ChromeMediaRecorder (video) {
   var mediaStreamRecorder = null;
   var buffer = null;
   var currentStream = stream;
-  var audioContext = new AudioContext();
   var audio = null;
   var currentBlobs = {
     audio: null,
     video: null
   };
+  var audioContext = null;
 
   function setBlobs (blobs) {
-    currentBlobs = blobs;
-    var fileReader = new FileReader();
-    fileReader.onload = function () {
-      buffer = this.result;
+
+    var run = function () {
+      audioContext = new AudioContext();
+
+      currentBlobs = blobs;
+
+      var fileReader = new FileReader();
+      fileReader.onload = function () {
+        buffer = this.result;
+      };
+      fileReader.readAsArrayBuffer(blobs.audio);
+      video.src = window.URL.createObjectURL(blobs.video);
     };
-    fileReader.readAsArrayBuffer(blobs.audio);
-    video.src = window.URL.createObjectURL(blobs.video);
-    video.pause();
+
+    if (audioContext) {
+      audioContext.close().then(run);
+    } else {
+      run();
+    }
   }
 
   function stream (cb, stream) {
@@ -79,7 +90,6 @@ module.exports = function ChromeMediaRecorder (video) {
           audio = audioContext.createBufferSource();
           audio.buffer = buffer;
           audio.connect(audioContext.destination);
-
           var start = function () {
               if (startPlaying) {
                 audio.start(0, seek / 1000);
@@ -87,14 +97,17 @@ module.exports = function ChromeMediaRecorder (video) {
                 video.pause();
               }
               video.removeEventListener('playing', start);
+              cb && cb();
           }
 
           video.addEventListener('playing', start);
           video.currentTime = seek / 1000;
           video.play();
-          cb && cb();
 
         });
+        audioContext.onerror = function (e) {
+          console.log('Error decoding audio', e);
+        };
         video.removeEventListener('canplay', canplay);
       };
 

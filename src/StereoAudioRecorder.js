@@ -16,7 +16,7 @@ module.exports = function StereoAudioRecorder(mediaStream, root) {
     var audioContext;
     var context;
 
-    var numChannels = root.audioChannels || 2;
+    var numChannels = root.audioChannels || 1;
 
     this.record = function() {
         recording = true;
@@ -133,78 +133,81 @@ module.exports = function StereoAudioRecorder(mediaStream, root) {
         }
     }
 
-    // creates the audio context
+    var run = function () {
+      ObjectStore.AudioContextConstructor = new audioContext();
 
+      var context = ObjectStore.AudioContextConstructor;
+
+      // creates a gain node
+      ObjectStore.VolumeGainNode = context.createGain();
+
+      var volume = ObjectStore.VolumeGainNode;
+
+      // creates an audio node from the microphone incoming stream
+      ObjectStore.AudioInput = context.createMediaStreamSource(mediaStream);
+
+      // creates an audio node from the microphone incoming stream
+      var audioInput = ObjectStore.AudioInput;
+
+      // connect the stream to the gain node
+      audioInput.connect(volume);
+
+      /* From the spec: This value controls how frequently the audioprocess event is
+      dispatched and how many sample-frames need to be processed each call.
+      Lower values for buffer size will result in a lower (better) latency.
+      Higher values will be necessary to avoid audio breakup and glitches
+      Legal values are 256, 512, 1024, 2048, 4096, 8192, and 16384.*/
+      var bufferSize = root.bufferSize || 2048;
+      if (root.bufferSize == 0) bufferSize = 0;
+
+      if (context.createJavaScriptNode) {
+          scriptprocessornode = context.createJavaScriptNode(bufferSize, numChannels, numChannels);
+      } else if (context.createScriptProcessor) {
+          scriptprocessornode = context.createScriptProcessor(bufferSize, numChannels, numChannels);
+      } else {
+          throw 'WebAudio API has no support on this browser.';
+      }
+
+      bufferSize = scriptprocessornode.bufferSize;
+
+      console.debug('using audio buffer-size:', bufferSize);
+
+      var requestDataInvoked = false;
+
+      // sometimes "scriptprocessornode" disconnects from he destination-node
+      // and there is no exception thrown in this case.
+      // and obviously no further "ondataavailable" events will be emitted.
+      // below global-scope variable is added to debug such unexpected but "rare" cases.
+      window.scriptprocessornode = scriptprocessornode;
+
+      if (numChannels == 1) {
+          console.debug('All right-channels are skipped.');
+      }
+
+      // http://webaudio.github.io/web-audio-api/#the-scriptprocessornode-interface
+      scriptprocessornode.onaudioprocess = function(e) {
+          if (!recording || requestDataInvoked) return;
+
+          var left = e.inputBuffer.getChannelData(0);
+          leftchannel.push(new Float32Array(left));
+
+          if (numChannels == 2) {
+              var right = e.inputBuffer.getChannelData(1);
+              rightchannel.push(new Float32Array(right));
+          }
+          recordingLength += bufferSize;
+      };
+
+      volume.connect(scriptprocessornode);
+      scriptprocessornode.connect(context.destination);
+    };
     // creates the audio context
     var audioContext = ObjectStore.AudioContext;
 
-    if (!ObjectStore.AudioContextConstructor)
-        ObjectStore.AudioContextConstructor = new audioContext();
-
-    var context = ObjectStore.AudioContextConstructor;
-
-    // creates a gain node
-    if (!ObjectStore.VolumeGainNode)
-        ObjectStore.VolumeGainNode = context.createGain();
-
-    var volume = ObjectStore.VolumeGainNode;
-
-    // creates an audio node from the microphone incoming stream
-    if (!ObjectStore.AudioInput)
-        ObjectStore.AudioInput = context.createMediaStreamSource(mediaStream);
-
-    // creates an audio node from the microphone incoming stream
-    var audioInput = ObjectStore.AudioInput;
-
-    // connect the stream to the gain node
-    audioInput.connect(volume);
-
-    /* From the spec: This value controls how frequently the audioprocess event is
-    dispatched and how many sample-frames need to be processed each call.
-    Lower values for buffer size will result in a lower (better) latency.
-    Higher values will be necessary to avoid audio breakup and glitches
-    Legal values are 256, 512, 1024, 2048, 4096, 8192, and 16384.*/
-    var bufferSize = root.bufferSize || 2048;
-    if (root.bufferSize == 0) bufferSize = 0;
-
-    if (context.createJavaScriptNode) {
-        scriptprocessornode = context.createJavaScriptNode(bufferSize, numChannels, numChannels);
-    } else if (context.createScriptProcessor) {
-        scriptprocessornode = context.createScriptProcessor(bufferSize, numChannels, numChannels);
+    if (ObjectStore.AudioContextConstructor) {
+      ObjectStore.AudioContextConstructor.close().then(run);
     } else {
-        throw 'WebAudio API has no support on this browser.';
+      run();
     }
 
-    bufferSize = scriptprocessornode.bufferSize;
-
-    console.debug('using audio buffer-size:', bufferSize);
-
-    var requestDataInvoked = false;
-
-    // sometimes "scriptprocessornode" disconnects from he destination-node
-    // and there is no exception thrown in this case.
-    // and obviously no further "ondataavailable" events will be emitted.
-    // below global-scope variable is added to debug such unexpected but "rare" cases.
-    window.scriptprocessornode = scriptprocessornode;
-
-    if (numChannels == 1) {
-        console.debug('All right-channels are skipped.');
-    }
-
-    // http://webaudio.github.io/web-audio-api/#the-scriptprocessornode-interface
-    scriptprocessornode.onaudioprocess = function(e) {
-        if (!recording || requestDataInvoked) return;
-
-        var left = e.inputBuffer.getChannelData(0);
-        leftchannel.push(new Float32Array(left));
-
-        if (numChannels == 2) {
-            var right = e.inputBuffer.getChannelData(1);
-            rightchannel.push(new Float32Array(right));
-        }
-        recordingLength += bufferSize;
-    };
-
-    volume.connect(scriptprocessornode);
-    scriptprocessornode.connect(context.destination);
 };
