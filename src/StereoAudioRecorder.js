@@ -12,7 +12,7 @@ module.exports = function StereoAudioRecorder(mediaStream, root) {
     var recordingLength = 0;
     var volume;
     var audioInput;
-    var sampleRate = root.sampleRate || 44100; // range: 22050 to 96000
+    var sampleRate = root.sampleRate || 48000; // range: 22050 to 96000
     var audioContext;
     var context;
 
