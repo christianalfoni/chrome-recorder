@@ -2,9 +2,10 @@ var WhammyRecorder = require('./WhammyRecorder.js');
 var StereoRecorder = require('./StereoRecorder.js');
 var utils = require('./utils.js');
 
-module.exports = function MediaStreamRecorder(mediaStream) {
+module.exports = function MediaStreamRecorder(mediaStream, options) {
     if (!mediaStream) throw 'MediaStream is mandatory.';
 
+    options = options || {};
     // void start(optional long timeSlice)
     // timestamp to fire "ondataavailable"
     this.start = function(timeSlice) {
@@ -18,6 +19,8 @@ module.exports = function MediaStreamRecorder(mediaStream) {
         }
 
         mediaRecorder = new Recorder(mediaStream);
+
+        mediaRecorder.sampleRate = options.sampleRate || mediaRecorder.sampleRate;
         mediaRecorder.ondataavailable = this.ondataavailable;
         mediaRecorder.onstop = this.onstop;
         mediaRecorder.onStartedDrawingNonBlankFrames = this.onStartedDrawingNonBlankFrames;

@@ -1,18 +1,19 @@
 var MediaStreamRecorder = require('./MediaStreamRecorder.js');
 
-module.exports = function MultiStreamRecorder(mediaStream) {
+module.exports = function MultiStreamRecorder(mediaStream, options) {
     if (!mediaStream) throw 'MediaStream is mandatory.';
 
     var self = this;
     var isFirefox = !!navigator.mozGetUserMedia;
 
+    options = options || {};
     this.stream = mediaStream;
 
     // void start(optional long timeSlice)
     // timestamp to fire "ondataavailable"
     this.start = function(timeSlice) {
-        audioRecorder = new MediaStreamRecorder(mediaStream);
-        videoRecorder = new MediaStreamRecorder(mediaStream);
+        audioRecorder = new MediaStreamRecorder(mediaStream, options.audio);
+        videoRecorder = new MediaStreamRecorder(mediaStream, options.video);
 
         audioRecorder.mimeType = 'audio/ogg';
         videoRecorder.mimeType = 'video/webm';

@@ -7,7 +7,7 @@
 
 var MultiStreamRecorder = require('./src/MultiStreamRecorder.js');
 
-module.exports = function ChromeMediaRecorder (video) {
+module.exports = function ChromeMediaRecorder (video, options) {
 
   var mediaStreamRecorder = null;
   var buffer = null;
@@ -43,7 +43,7 @@ module.exports = function ChromeMediaRecorder (video) {
 
   function stream (cb, stream) {
 
-    mediaStreamRecorder = new MultiStreamRecorder(stream);
+    mediaStreamRecorder = new MultiStreamRecorder(stream, options);
     mediaStreamRecorder.video = video;
     mediaStreamRecorder.audioChannels = 1;
     mediaStreamRecorder.ondataavailable = setBlobs;
